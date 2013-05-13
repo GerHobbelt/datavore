@@ -72,12 +72,12 @@ dv.type = {
 dv.table = function(input)
 {
     var table = []; // the data table
-    
+
     table.addColumn = function(name, values, type, iscolumn) {
         type = type || dv.type.unknown;
         var compress = (type === dv.type.nominal || type === dv.type.ordinal);
         var vals = values;
-        
+
         if (compress && !iscolumn) {
             vals = [];
             vals.lut = code(values);
@@ -92,10 +92,19 @@ dv.table = function(input)
         vals.index = table.length;
         vals.type = type;
 
-        table.push(vals);
-        table[name] = vals;
+        if (!table[name])
+        {
+            table.push(vals);
+            table[name] = vals;
+        }
+        else
+        {
+            vals.forEach(function(val) {
+				return table[name].push(val);
+			});
+        }
     };
-    
+
     table.removeColumn = function(col) {
         col = table[col] || null;
         if (col != null) {
@@ -104,7 +113,7 @@ dv.table = function(input)
         }
         return col;
     };
-    
+
     table.rows = function() { return table[0] ? table[0].length : 0; };
 
     table.cols = function() { return table.length; };
@@ -127,14 +136,14 @@ dv.table = function(input)
                 sz.push(col.lut.length);
             }
         }
-        
+
         var vals = q.vals,  // aggregate query operators
             C = sz.reduce(function(a,b) { return a * b; }, 1), // cube cardinality
             N = tab[0].length, p, col, v, name, expr,        // temp vars
             cnt, sum, ssq, min, max,            // aggregate values
             _cnt, _sum, _ssq, _min, _max,       // aggregate flags
             ctx = {}, emap = {}, exp = [], lut, // aggregate state vars
-            i = 0, j = 0, k = 0, l = 0, idx = 0, len, slen = sz.length; // indices        
+            i = 0, j = 0, k = 0, l = 0, idx = 0, len, slen = sz.length; // indices
 
         // Identify Requested Aggregates
         var star = false;
@@ -165,7 +174,7 @@ dv.table = function(input)
         for (i = 0, p = [1]; i < slen; ++i) {
             p.push(p[i] * sz[i]);
         }
-        
+
         // Execute Query: Compute Aggregates
         for (j = 0, len = exp.length; j < len; ++j) {
             expr = exp[j];
@@ -175,7 +184,7 @@ dv.table = function(input)
             min = ctx["min_" + expr]; _min = (min !== undefined);
             max = ctx["max_" + expr]; _max = (max !== undefined);
             col = tab[expr];
-outer:            
+outer:
             for (i = 0; i < N; ++i) {
                 for (idx = 0, k = 0; k < slen; ++k) {
                     // compute cube index
@@ -191,7 +200,7 @@ outer:
                 if (_max && v > max[idx]) { max[idx] = v; }
             }
         }
-        
+
         // Generate Results
         var result = [], stride = 1, s, val, code = q.code || false;
         for (i = 0; i < dims.length; ++i) {
@@ -236,7 +245,7 @@ outer:
             cnt, sum, ssq, min, max,            // aggregate values
             _cnt, _sum, _ssq, _min, _max,       // aggregate flags
             ctx = {}, emap = {}, exp = [], lut, // aggregate state vars
-            i = 0, j = 0, k = 0, l = 0, idx = 0, len, slen = sz.length; // indices        
+            i = 0, j = 0, k = 0, l = 0, idx = 0, len, slen = sz.length; // indices
 
         // Identify Requested Aggregates
         var star = false;
@@ -276,7 +285,7 @@ outer:
             min = ctx["min_" + expr]; _min = (min !== undefined);
             max = ctx["max_" + expr]; _max = (max !== undefined);
             col = tab[expr];
-outer:            
+outer:
             for (i = 0; i < N; ++i) {
                 for (idx = 0, k = 0; k < slen; ++k) {
                     // compute cube index
@@ -334,11 +343,11 @@ outer:
         }
         return result;
     };
-    
+
     table.where = function(f) {
         var nrows = table.rows(),
             ncols = table.cols();
-        
+
         // initialize result table
         var result = dv.table([]);
         for (var i = 0; i < ncols; ++i) {
@@ -349,7 +358,7 @@ outer:
             result[table[i].name] = result[i];
             if (table[i].lut) { result[i].lut = table[i].lut; }
         }
-        
+
         // populate result table
         for (var row = 0, j = -1; row < nrows; ++row) {
             if (f(table, row)) {
@@ -360,7 +369,7 @@ outer:
         }
         return result;
     };
-    
+
     /** @private */
     function code(a) {
         var c = [], d = {}, v;
@@ -370,7 +379,7 @@ outer:
         return typeof(c[0]) !== "number" ? c.sort()
             : c.sort(function(a,b) { return a - b; });
     };
-    
+
     /** @private */
     function dict(lut) {
         return lut.reduce(function(a,b,i) { a[b] = i; return a; }, {});
@@ -379,7 +388,7 @@ outer:
     // populate data table
     if (input) {
         input.forEach(function(d) {
-            table.addColumn(d.name, d.values, d.type);    
+            table.addColumn(d.name, d.values, d.type);
         });
     }
     return table;
@@ -421,7 +430,7 @@ dv.max = function(expr) {
     return op;
 };
 
-dv.sum = function(expr) {    
+dv.sum = function(expr) {
     var op = {};
     op.init = function() {
         var o = {}; o[expr] = ["sum"]; return o;
@@ -431,7 +440,7 @@ dv.sum = function(expr) {
     return op;
 };
 
-dv.avg = function(expr) {    
+dv.avg = function(expr) {
     var op = {};
     op.init = function() {
         var o = {"*":["cnt"]}; o[expr] = ["sum"]; return o;
@@ -550,7 +559,7 @@ dv.bin = function(expr, step, min, max) {
     return op;
 };
 
-dv.quantile = function(expr, n) {    
+dv.quantile = function(expr, n) {
     function search(array, value) {
         var low = 0, high = array.length - 1;
         while (low <= high) {
