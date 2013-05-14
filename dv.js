@@ -79,36 +79,100 @@ dv.table = function(input) {
     var table = []; // the data table
 
     table.addColumn = function(name, values, type, iscolumn) {
-        type = type || dv.type.unknown;
+        var a, i, len;
+        var old_table_index = false;
+        var old_lut;
+        var col_dflt_type = dv.type.unknown;
+        a = table[name];
+        if (a && a.lut && a.type) {
+            // when we are APPENDING to an existing table column, we better make sure we remember the old LUT!
+            old_lut = a.lut;
+            // and stick with the current column's type when no override has been specified on append
+            col_dflt_type = a.type;
+            old_table_index = a.index;
+        }
+        type = type || col_dflt_type;
         var compress = (type === dv.type.nominal || type === dv.type.ordinal);
         var vals = values;
+        var map;
+
+        // when we're updating the column and we happen to change it's type,
+        // then expand what we have so far. This is relatively slow, but we do
+        // not want to spend too much time on this scenario.
+        if (old_table_index !== false /* is identical check to: col_dflt_type !== dv.type.unknown */ ) {
+            if (compress !== (col_dflt_type === dv.type.nominal || col_dflt_type === dv.type.ordinal)) {
+                vals = table[name];
+                if (old_lut) {
+                    a = [];
+                    for (i = 0, len = vals.length; i < len; ++i) {
+                        a.push(old_lut[vals[i]]);
+                    }
+                    for (i = 0, len = values.length; i < len; ++i) {
+                        a.push(values[i]);
+                    }
+                    values = a;
+                } else {
+                    for (i = 0, len = values.length; i < len; ++i) {
+                        vals.push(values[i]);
+                    }
+                    values = vals;
+                }
+                // as we now combined all existing entries with the new addendum, act as if there's no update going on:
+                col_dflt_type = dv.type.unknown;
+                old_lut = undefined;
+            }
+            // else: we are performing an update on a column while keeping the type the same: optimize the append action where possible
+        }
 
         if (compress && !iscolumn) {
             vals = [];
-            vals.lut = code(values);
-            for (var i = 0, map = dict(vals.lut); i < values.length; ++i) {
+
+            // construct the new LUT and reverse lookup mapping table (dictionary)
+            vals.lut = code(values, old_lut);
+            map = dict(vals.lut);
+
+            // correct the existing data entries
+            if (old_lut) {
+                // we assume the worst and that is that all old entries need to be remapped:
+                a = table[name];
+                for (i = 0, len = a.length; i < len; ++i) {
+                    vals.push(map[old_lut[a[i]]]);
+                }
+            }
+
+            // process the new data entries
+            for (i = 0, len = values.length; i < len; ++i) {
                 vals.push(map[values[i]]);
             }
             vals.get = function(idx) {
                 return this.lut[this[idx]];
             };
         } else if (!iscolumn) {
+            // when we're appending to an existing column, append at the end:
+            if (col_dflt_type !== dv.type.unknown /* now NOT identical to: old_table_index !== false */ ) {
+                vals = table[name];
+
+                for (i = 0, len = values.length; i < len; ++i) {
+                    vals.push(values[i]);
+                }
+            }
+
             vals.get = function(idx) {
                 return this[idx];
             };
         }
-        vals.name = name;
-        vals.index = table.length;
-        vals.type = type;
 
-        if (!table[name]) {
+        vals.name = name;
+        vals.type = type;
+        table[name] = vals;
+        if (old_table_index === false) {
+            vals.index = table.length;
             table.push(vals);
-            table[name] = vals;
         } else {
-            vals.forEach(function(val) {
-                return table[name].push(val);
-            });
+            vals.index = old_table_index;
+            table[old_table_index] = vals;
         }
+        return table;
     };
 
     table.removeColumn = function(col) {
@@ -456,13 +520,22 @@ outer:
     /** @private
      * Map input values to a lookup table
      */
-    function code(a) {
+    function code(a, old_lut) {
         var c = [],     // collects the deduplicated values of a[]
             d = {},     // used to mark values of a[] during the deduplication process
-            v;
+            v, i, len;
+
+        // if a previously constructed LUT is specified, then build off of that one by reusing it
+        if (old_lut) {
+            for (i = 0, len = old_lut.length; i < len; ++i) {
+                v = old_lut[i];
+                d[v] = 1;
+                c.push(v);
+            }
+        }
 
         // the deduplication process of a[]
-        for (var i = 0, len = a.length; i < len; ++i) {
+        for (i = 0, len = a.length; i < len; ++i) {
             if (d[v = a[i]] === undefined) {
                 d[v] = 1;
                 c.push(v);
