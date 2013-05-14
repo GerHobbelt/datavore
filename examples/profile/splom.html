@@ -1,10 +1,17 @@
 <html>
 <head>
-  <title>Profiler Scatterplot Matrix</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>Datavore Scatter Plot Matrix Demo</title>
   <script type="text/javascript" src="../../lib/d3.v2.min.js"></script>
   <script type="text/javascript" src="../../dv.js"></script>
   <script type="text/javascript" src="dv.profile.js"></script>
   <style type="text/css">
+a {
+  color: black;
+}
+a:hover {
+  color: red;
+}
 svg {
   border: 1px solid #ccc;
   padding: 0px;
@@ -24,6 +31,22 @@ rect.brush {
 </head>
 <body>
 <strong>Data Profiler Scatter Plot Matrix (SPLOM)</strong>
+&nbsp;&nbsp;
+Dimensions: <select id="dims" onchange="update();">
+ <option value="3">3</option>
+ <option value="4">4</option>
+ <option value="5" selected="">5</option>
+</select>
+Bins: <select id="bins" onchange="update();">
+ <option value="10">10</option>
+ <option value="20" selected="">20</option>
+ <option value="30">30</option>
+</select>
+Data Points: <select id="rows" onchange="update();">
+ <option value="10000">10k</option>
+ <option value="100000" selected="">100k</option>
+ <option value="1000000">1M</option>
+</select>
 <div>
   <span id="d00"></span>
   <span id="d01"></span>
@@ -51,9 +74,21 @@ rect.brush {
   <span id="d43"></span>
   <span id="d44"></span><br/>
 </div>
+<small>Powered by <a href="https://github.com/StanfordHCI/datavore">Datavore</a> and <a href="http://mbostock.github.com/d3/">D3</a>.</small>
 <script type="text/javascript">
 var data,
     sz = 150;
+
+function update() {
+    var dims = d3.select("#dims").property("value");
+    var bins = d3.select("#bins").property("value");
+    var rows = d3.select("#rows").property("value");
+    run({
+        N: rows,
+        bins: bins,
+        dim: dims
+    });
+}
 
 function datagen(opt) {
     if (data && data.length == opt.dim && data[0].length == opt.N) {
