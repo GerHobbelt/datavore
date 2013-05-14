@@ -164,13 +164,15 @@ dv.table = function(input) {
 
         vals.name = name;
         vals.type = type;
-        table[name] = vals;
+        // table[name] = vals; -- do not do this yet, 'name' may be a numeric which would destroy our vals.index assignment below!
         if (old_table_index === false) {
             vals.index = table.length;
             table.push(vals);
+            table[name] = vals;
         } else {
             vals.index = old_table_index;
             table[old_table_index] = vals;
+            table[name] = vals;
         }
         return table;
     };

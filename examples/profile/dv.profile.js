@@ -283,7 +283,7 @@ dv.profile = function(data) {
                 g[i].select(e);
             } else {
                 g[i].select({
-                    data:null
+                    data: null
                 });
             }
         }
