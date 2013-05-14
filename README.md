@@ -1,7 +1,7 @@
 # Datavore
 
 **Datavore** is a small in-browser database engine written in JavaScript.
-Datavore enables you to perform fast aggregation queries within web-based 
+Datavore enables you to perform fast aggregation queries within web-based
 analytics or visualization applications. Datavore consists of an in-memory
 column-oriented database implemented using standard JavaScript arrays. The
 system provides support for filtering and group-by aggregation queries. When
@@ -24,7 +24,7 @@ full table through the constructor or add columns one-by-one. For instance:
 
     var colA = ["a","a","b","b","c"];
     var colB = [0,1,2,3,4];
-    
+
     // create a table in one call by bundling up columns
     var tab1 = dv.table([
         {name:"A", values:colA, type:dv.type.nominal},
@@ -38,10 +38,10 @@ full table through the constructor or add columns one-by-one. For instance:
     tab2.addColumn("B", colB, dv.type.numeric);
 
 In addition to the column name and array of values, each column must have a
-specified data type, one of `dv.type.nominal`, `dv.type.ordinal`, 
+specified data type, one of `dv.type.nominal`, `dv.type.ordinal`,
 `dv.type.numeric`, or `dv.type.unknown`. Numeric means the column contains numbers
 that can be aggregated (e.g., summed, averaged, etc). Nominal values are
-category labels without a meaningful sort order, while ordinal values can be 
+category labels without a meaningful sort order, while ordinal values can be
 meaningfully sorted.
 
 Datavore treats nominal and ordinal data in a special way: it recodes the
@@ -53,7 +53,7 @@ and other data types to integer codes enables faster query performance.
 ### Accessing Table Values
 
 You can access values within a Datavore table directly via array indices or
-through the table `get` method. For nominal or ordinal types, direct access will 
+through the table `get` method. For nominal or ordinal types, direct access will
 return coded integers. The `get` method always returns the original value.
 
     // both array indices and the "get" method use (column, row) ordering
@@ -71,7 +71,7 @@ You can either access columns by their numerical index (as above) or by name:
     alert(tab1["A"][1]);    // 1st column, 2nd row, coded   --> prints "0"
     alert(tab1.get("A",1)); // 1st column, 2nd row, uncoded --> prints "a"
 
-**WARNING**: *Datavore column names should NOT be numbers.* If you use column 
+**WARNING**: *Datavore column names should NOT be numbers.* If you use column
 names that JavaScript can interpret as integer values ("00") you will likely
 experience unexpected (and undesirable) behavior.
 

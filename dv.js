@@ -12,7 +12,9 @@ var dv = {version: "1.0.0"};
 
 dv.array = function(n) {
     var a = Array(n);
-    for (var i = n; --i >= 0;) { a[i] = 0; }
+    for (var i = n; --i >= 0;) {
+        a[i] = 0;
+    }
     return a;
 }
 
@@ -44,7 +46,10 @@ dv.rand.normal = function(mean, stdev) {
     stdev = stdev || 1;
     var next = undefined;
     return function() {
-        var x = 0, y = 0, rds, c;
+        var x = 0,
+            y = 0,
+            rds,
+            c;
         if (next !== undefined) {
             x = next;
             next = undefined;
@@ -60,6 +65,7 @@ dv.rand.normal = function(mean, stdev) {
         return mean + x * c * stdev;
     }
 }
+
 // -- DATA TABLE --------------------------------------------------------------
 
 dv.type = {
@@ -69,8 +75,7 @@ dv.type = {
     unknown: "unknown"
 };
 
-dv.table = function(input)
-{
+dv.table = function(input) {
     var table = []; // the data table
 
     table.addColumn = function(name, values, type, iscolumn) {
@@ -81,27 +86,28 @@ dv.table = function(input)
         if (compress && !iscolumn) {
             vals = [];
             vals.lut = code(values);
-            for (var i = 0, map=dict(vals.lut); i < values.length; ++i) {
+            for (var i = 0, map = dict(vals.lut); i < values.length; ++i) {
                 vals.push(map[values[i]]);
             }
-            vals.get = function(idx) { return this.lut[this[idx]]; }
+            vals.get = function(idx) {
+                return this.lut[this[idx]];
+            };
         } else if (!iscolumn) {
-            vals.get = function(idx) { return this[idx]; }
+            vals.get = function(idx) {
+                return this[idx];
+            };
         }
         vals.name = name;
         vals.index = table.length;
         vals.type = type;
 
-        if (!table[name])
-        {
+        if (!table[name]) {
             table.push(vals);
             table[name] = vals;
-        }
-        else
-        {
+        } else {
             vals.forEach(function(val) {
-				return table[name].push(val);
-			});
+                return table[name].push(val);
+            });
         }
     };
 
@@ -114,19 +120,29 @@ dv.table = function(input)
         return col;
     };
 
-    table.rows = function() { return table[0] ? table[0].length : 0; };
+    table.rows = function() {
+        return table[0] ? table[0].length : 0;
+    };
 
-    table.cols = function() { return table.length; };
+    table.cols = function() {
+        return table.length;
+    };
 
-    table.get = function(col, row) { return table[col].get(row); }
+    table.get = function(col, row) {
+        return table[col].get(row);
+    };
 
     table.dense_query = function(q) {
         var tab = q.where ? table.where(q.where) : table;
-        var dims = [], sz = [1], hasDims = q.dims;
+        var dims = [],
+            sz = [1],
+            hasDims = q.dims;
+
         if (hasDims) {
             sz = [];
             for (i = 0; i < q.dims.length; ++i) {
-                var dim = q.dims[i], type = typeof dim;
+                var dim = q.dims[i],
+                    type = typeof dim;
                 if (type === "string" || type === "number") {
                     col = tab[dim];
                 } else if (dim.array) {
@@ -138,8 +154,11 @@ dv.table = function(input)
         }
 
         var vals = q.vals,  // aggregate query operators
-            C = sz.reduce(function(a,b) { return a * b; }, 1), // cube cardinality
-            N = tab[0].length, p, col, v, name, expr,        // temp vars
+            C = sz.reduce(function(C, col_lut_len) {
+                return C * col_lut_len;
+            }, 1), // cube cardinality
+            N = tab[0].length,
+            p, col, v, name, expr,              // temp vars
             cnt, sum, ssq, min, max,            // aggregate values
             _cnt, _sum, _ssq, _min, _max,       // aggregate flags
             ctx = {}, emap = {}, exp = [], lut, // aggregate state vars
@@ -168,7 +187,9 @@ dv.table = function(input)
                 }
             }
         }
-        if (exp.length == 0 && star) { exp.push(-1) };
+        if (exp.length == 0 && star) {
+            exp.push(-1);
+        }
 
         // Compute Cube Index Coefficients
         for (i = 0, p = [1]; i < slen; ++i) {
@@ -178,11 +199,16 @@ dv.table = function(input)
         // Execute Query: Compute Aggregates
         for (j = 0, len = exp.length; j < len; ++j) {
             expr = exp[j];
-            cnt = ctx["cnt"]; _cnt = (cnt && j==0);
-            sum = ctx["sum_" + expr]; _sum = (sum !== undefined);
-            ssq = ctx["ssq_" + expr]; _ssq = (ssq !== undefined);
-            min = ctx["min_" + expr]; _min = (min !== undefined);
-            max = ctx["max_" + expr]; _max = (max !== undefined);
+            cnt = ctx["cnt"];
+            _cnt = (cnt && j == 0);
+            sum = ctx["sum_" + expr];
+            _sum = (sum !== undefined);
+            ssq = ctx["ssq_" + expr];
+            _ssq = (ssq !== undefined);
+            min = ctx["min_" + expr];
+            _min = (min !== undefined);
+            max = ctx["max_" + expr];
+            _max = (max !== undefined);
             col = tab[expr];
 outer:
             for (i = 0; i < N; ++i) {
@@ -192,31 +218,53 @@ outer:
                     if (l < 0) continue outer;
                     idx += p[k] * l;
                 }
-                if (col) { v = col[i]; }
-                if (_cnt) { cnt[idx] += 1; }
-                if (_sum) { sum[idx] += v; }
-                if (_ssq) { ssq[idx] += v * v; }
-                if (_min && v < min[idx]) { min[idx] = v; }
-                if (_max && v > max[idx]) { max[idx] = v; }
+                if (col) {
+                    v = col[i];
+                }
+                if (_cnt) {
+                    cnt[idx] += 1;
+                }
+                if (_sum) {
+                    sum[idx] += v;
+                }
+                if (_ssq) {
+                    ssq[idx] += v * v;
+                }
+                if (_min && v < min[idx]) {
+                    min[idx] = v;
+                }
+                if (_max && v > max[idx]) {
+                    max[idx] = v;
+                }
             }
         }
 
         // Generate Results
-        var result = [], stride = 1, s, val, code = q.code || false;
+        var result = [],
+            stride = 1,
+            s,
+            val,
+            code = q.code || false;
+
         for (i = 0; i < dims.length; ++i) {
             col = [];
             lut = dims[i].lut;
             s = sz[i];
             val = 0;
             for (j = 0, k = 0, c = -1; j < C; ++j, ++k) {
-                if (k == stride) { k = 0; val = (val + 1) % s; }
+                if (k == stride) {
+                    k = 0;
+                    val = (val + 1) % s;
+                }
                 col[j] = code ? val : lut[val];
             }
             stride *= s;
             col.unique = lut.length;
             result.push(col);
         }
-        vals.map(function(op) { result.push(op.done(ctx)); });
+        vals.map(function(op) {
+            result.push(op.done(ctx));
+        });
         return result;
     };
 
@@ -224,11 +272,15 @@ outer:
 
     table.sparse_query = function(q) {
         var tab = q.where ? table.where(q.where) : table;
-        var dims = [], sz = [1], hasDims = q.dims;
+        var dims = [],
+            sz = [1],
+            hasDims = q.dims;
+
         if (hasDims) {
             sz = [];
-            for (i=0; i<q.dims.length; ++i) {
-                var dim = q.dims[i], type = typeof dim;
+            for (i = 0; i < q.dims.length; ++i) {
+                var dim = q.dims[i],
+                    type = typeof dim;
                 if (type === "string" || type === "number") {
                     col = tab[dim];
                 } else if (dim.array) {
@@ -240,8 +292,11 @@ outer:
         }
 
         var vals = q.vals,  // aggregate query operators
-            C = sz.reduce(function(a,b) { return a*b; }, 1), // cube cardinality
-            N = tab[0].length, p, col, v, name, expr,      // temp vars
+            C = sz.reduce(function(C, col_lut_len) {
+                return C * col_lut_len;
+            }, 1), // cube cardinality
+            N = tab[0].length,
+            p, col, v, name, expr,              // temp vars
             cnt, sum, ssq, min, max,            // aggregate values
             _cnt, _sum, _ssq, _min, _max,       // aggregate flags
             ctx = {}, emap = {}, exp = [], lut, // aggregate state vars
@@ -270,20 +325,27 @@ outer:
                 }
             }
         }
-        if (exp.length == 0 && star) { exp.push(-1) };
+        if (exp.length == 0 && star) {
+            exp.push(-1);
+        }
 
         // Compute Cube Index Coefficients
-        for (i = 0, p=[1]; i < slen; ++i) {
+        for (i = 0, p = [1]; i < slen; ++i) {
             p.push(p[i] * sz[i]);
         }
         // Execute Query: Compute Aggregates
         for (j = 0, len = exp.length; j < len; ++j) {
             expr = exp[j];
-            cnt = ctx["cnt"]; _cnt = (cnt && j==0);
-            sum = ctx["sum_" + expr]; _sum = (sum !== undefined);
-            ssq = ctx["ssq_" + expr]; _ssq = (ssq !== undefined);
-            min = ctx["min_" + expr]; _min = (min !== undefined);
-            max = ctx["max_" + expr]; _max = (max !== undefined);
+            cnt = ctx["cnt"];
+            _cnt = (cnt && j == 0);
+            sum = ctx["sum_" + expr];
+            _sum = (sum !== undefined);
+            ssq = ctx["ssq_" + expr];
+            _ssq = (ssq !== undefined);
+            min = ctx["min_" + expr];
+            _min = (min !== undefined);
+            max = ctx["max_" + expr];
+            _max = (max !== undefined);
             col = tab[expr];
 outer:
             for (i = 0; i < N; ++i) {
@@ -293,17 +355,25 @@ outer:
                     if (l < 0) continue outer;
                     idx += p[k] * l;
                 }
-                if (col) { v = col[i]; }
+                if (col) {
+                    v = col[i];
+                }
                 if (_cnt) {
-                    if (cnt[idx] === undefined) { cnt[idx]=0; }
+                    if (cnt[idx] === undefined) {
+                        cnt[idx] = 0;
+                    }
                     cnt[idx] += 1;
                 }
                 if (_sum) {
-                    if (sum[idx] === undefined) { sum[idx]=0; }
+                    if (sum[idx] === undefined) {
+                        sum[idx] = 0;
+                    }
                     sum[idx] += v;
                 }
                 if (_ssq) {
-                    if (ssq[idx] === undefined) { ssq[idx]=0; }
+                    if (ssq[idx] === undefined) {
+                        ssq[idx] = 0;
+                    }
                     ssq[idx] += v * v;
                 }
                 if (_min && (min[idx] === undefined || v < min[idx])) {
@@ -316,19 +386,30 @@ outer:
         }
 
         // Generate Results
-        var rr = vals.map(function(op) { return op.done(ctx); });
+        var rr = vals.map(function(op) {
+            return op.done(ctx);
+        });
         var keys = rr[0];
         if (rr.length > 1) {
             keys = {};
-            rr.forEach(function(o) { for (var k in o) keys[k] = 1; });
+            rr.forEach(function(o) {
+                for (var k in o)
+                    keys[k] = 1;
+            });
         }
-        var result = dims.map(function() { return []; });
-        vals.forEach(function() { result.push([]); });
+        var result = dims.map(function() {
+            return [];
+        });
+        vals.forEach(function() {
+            result.push([]);
+        });
         len = dims.length;
 
         for (k in keys) {
             // map index i to dimensional indices
-            var nn = C, uv, div;
+            var nn = C,
+                uv, div;
+
             for (i = k, j = len; --j >= 0;) {
                 uv = dims[j].lut.length;
                 div = ~~(nn / uv);
@@ -356,7 +437,9 @@ outer:
             result[i].type = table[i].type;
             result[i].index = i;
             result[table[i].name] = result[i];
-            if (table[i].lut) { result[i].lut = table[i].lut; }
+            if (table[i].lut) {
+                result[i].lut = table[i].lut;
+            }
         }
 
         // populate result table
@@ -370,19 +453,38 @@ outer:
         return result;
     };
 
-    /** @private */
+    /** @private
+     * Map input values to a lookup table
+     */
     function code(a) {
-        var c = [], d = {}, v;
-        for (var i=0, len=a.length; i<len; ++i) {
-            if (d[v = a[i]] === undefined) { d[v] = 1; c.push(v); }
+        var c = [],     // collects the deduplicated values of a[]
+            d = {},     // used to mark values of a[] during the deduplication process
+            v;
+
+        // the deduplication process of a[]
+        for (var i = 0, len = a.length; i < len; ++i) {
+            if (d[v = a[i]] === undefined) {
+                d[v] = 1;
+                c.push(v);
+            }
         }
-        return typeof(c[0]) !== "number" ? c.sort()
-            : c.sort(function(a,b) { return a - b; });
+
+        // produce an ordered LUT for the values of a[]
+        return typeof(c[0]) !== "number" ?
+            c.sort() :
+            c.sort(function(a, b) {
+                return a - b;
+            });
     };
 
-    /** @private */
+    /** @private
+     * Generate a dictionary for the given LUT, i.e. produce a reverse lookup dictionary such that: dict[lut[i]] == i
+    */
     function dict(lut) {
-        return lut.reduce(function(a,b,i) { a[b] = i; return a; }, {});
+        return lut.reduce(function(dict, lut_val, i) {
+            dict[lut_val] = i;
+            return dict;
+        }, {});
     };
 
     // populate data table
@@ -403,9 +505,13 @@ dv.noop = function() {};
 dv.count = function(expr) {
     var op = {};
     op.init = function() {
-        return {"*":["cnt"]};
+        return {
+            "*": ["cnt"]
+        };
     }
-    op.done = function(ctx) { return ctx["cnt"]; };
+    op.done = function(ctx) {
+        return ctx["cnt"];
+    };
     op.value = expr;
     return op;
 };
@@ -413,9 +519,13 @@ dv.count = function(expr) {
 dv.min = function(expr) {
     var op = {};
     op.init = function() {
-        var o = {}; o[expr] = ["min"]; return o;
+        var o = {};
+        o[expr] = ["min"];
+        return o;
     }
-    op.done = function(ctx) { return ctx["min_" + expr]; };
+    op.done = function(ctx) {
+        return ctx["min_" + expr];
+    };
     op.value = expr;
     return op;
 };
@@ -423,9 +533,13 @@ dv.min = function(expr) {
 dv.max = function(expr) {
     var op = {};
     op.init = function() {
-        var o = {}; o[expr] = ["max"]; return o;
+        var o = {};
+        o[expr] = ["max"];
+        return o;
     }
-    op.done = function(ctx) { return ctx["max_" + expr]; };
+    op.done = function(ctx) {
+        return ctx["max_" + expr];
+    };
     op.value = expr;
     return op;
 };
@@ -433,9 +547,13 @@ dv.max = function(expr) {
 dv.sum = function(expr) {
     var op = {};
     op.init = function() {
-        var o = {}; o[expr] = ["sum"]; return o;
+        var o = {};
+        o[expr] = ["sum"];
+        return o;
     }
-    op.done = function(ctx) { return ctx["sum_" + expr]; };
+    op.done = function(ctx) {
+        return ctx["sum_" + expr];
+    };
     op.value = expr;
     return op;
 };
@@ -443,17 +561,29 @@ dv.sum = function(expr) {
 dv.avg = function(expr) {
     var op = {};
     op.init = function() {
-        var o = {"*":["cnt"]}; o[expr] = ["sum"]; return o;
+        var o = {
+            "*":["cnt"]
+        };
+        o[expr] = ["sum"];
+        return o;
     };
     op.done = function(ctx) {
-        var akey = "avg_" + expr, avg = ctx[akey];
+        var akey = "avg_" + expr,
+            avg = ctx[akey];
+
         if (!avg) {
-            var sum = ctx["sum_" + expr], cnt = ctx["cnt"];
+            var sum = ctx["sum_" + expr],
+                cnt = ctx["cnt"];
+
              if (Object.prototype.toString.call(sum) === "[object Array]") {
-                ctx[akey] = (avg = sum.map(function(v,i) { return v / cnt[i]; }));
+                ctx[akey] = (avg = sum.map(function(v, i) {
+                    return v / cnt[i];
+                }));
             } else {
                 ctx[akey] = (avg = {});
-                for (var i in sum) { avg[i] = sum[i] / cnt[i]; }
+                for (var i in sum) {
+                    avg[i] = sum[i] / cnt[i];
+                }
             }
         }
         return avg;
@@ -463,29 +593,44 @@ dv.avg = function(expr) {
 };
 
 dv.variance = function(expr, sample) {
-    var op = {}, adj = sample ? 1 : 0;
+    var op = {},
+        adj = sample ? 1 : 0;
+
     op.init = function() {
-        var o = {"*":["cnt"]}; o[expr] = ["sum","ssq"]; return o;
+        var o = {
+            "*": ["cnt"]
+        };
+        o[expr] = ["sum", "ssq"];
+        return o;
     };
     op.done = function(ctx) {
-        var cnt = ctx["cnt"], sum = ctx["sum_" + expr], ssq = ctx["ssq_" + expr];
-        var akey = "avg_" + expr, avg = ctx[akey];
+        var cnt = ctx["cnt"],
+            sum = ctx["sum_" + expr],
+            ssq = ctx["ssq_" + expr];
+        var akey = "avg_" + expr,
+            avg = ctx[akey];
 
         if (!avg) {
             if (Object.prototype.toString.call(sum) === "[object Array]") {
-                ctx[akey] = (avg = sum.map(function(v,i) { return v / cnt[i]; }));
+                ctx[akey] = (avg = sum.map(function(v, i) {
+                    return v / cnt[i];
+                }));
             } else {
                 ctx[akey] = (avg = {});
-                for (var i in sum) { avg[i] = sum[i] / cnt[i]; }
+                for (var i in sum) {
+                    avg[i] = sum[i] / cnt[i];
+                }
             }
         }
         if (Object.prototype.toString.call(ssq) === "[object Array]") {
-            return ssq.map(function(v,i) {
+            return ssq.map(function(v, i) {
                 return v / cnt[i] - avg[i] * avg[i];
             });
         } else {
             var va = {};
-            for (var i in ssq) { va[i] = ssq[i] / cnt[i] - avg[i] * avg[i]; }
+            for (var i in ssq) {
+                va[i] = ssq[i] / cnt[i] - avg[i] * avg[i];
+            }
             return va;
         }
     };
@@ -494,13 +639,18 @@ dv.variance = function(expr, sample) {
 };
 
 dv.stdev = function(expr, sample) {
-    var op = dv.variance(expr, sample), end = op.done;
+    var op = dv.variance(expr, sample),
+        end = op.done;
     op.done = function(ctx) {
         var dev = end(ctx);
         if (Object.prototype.toString.call(dev) === "[object Array]") {
-            for (var i = 0; i < dev.length; ++i) { dev[i] = Math.sqrt(dev[i]); }
+            for (var i = 0; i < dev.length; ++i) {
+                dev[i] = Math.sqrt(dev[i]);
+            }
         } else {
-            for (var i in dev) { dev[i] = Math.sqrt(dev[i]); }
+            for (var i in dev) {
+                dev[i] = Math.sqrt(dev[i]);
+            }
         }
         return dev;
     }
@@ -512,27 +662,53 @@ dv.stdev = function(expr, sample) {
 dv.bin = function(expr, step, min, max) {
     var op = {};
     op.array = function(values) {
-        var N = values.length, val, idx, i,
-            minv = min, maxv = max, minb = false, maxb = false;
-        if (minv === undefined) { minv = Infinity; minb = true; }
-        if (maxv === undefined) { maxv = -Infinity; maxb = true; }
+        var N = values.length,
+            val, idx, i,
+            minv = min,
+            maxv = max,
+            minb = false,
+            maxb = false;
+
+        if (minv === undefined) {
+            minv = Infinity;
+            minb = true;
+        }
+        if (maxv === undefined) {
+            maxv = -Infinity;
+            maxb = true;
+        }
         if (minb || maxb) {
             for (i = 0; i < N; ++i) {
                 val = values[i];
-                if (minb && val < minv) { minv = val; }
-                if (maxb && val > maxv) { maxv = val; }
+                if (minb && val < minv) {
+                    minv = val;
+                }
+                if (maxb && val > maxv) {
+                    maxv = val;
+                }
             }
-            if (minb) { minv = Math.floor(minv / step) * step; }
-            if (maxb) { maxv = Math.ceil(maxv / step) * step; }
+            if (minb) {
+                minv = Math.floor(minv / step) * step;
+            }
+            if (maxb) {
+                maxv = Math.ceil(maxv / step) * step;
+            }
         }
         // compute index array
-        var a = [], lut = (a.lut = []),
-            range = (maxv - minv), unique = Math.ceil(range / step);
+        var a = [],
+            lut = (a.lut = []),
+            range = (maxv - minv),
+            unique = Math.ceil(range / step);
+
         for (i = 0; i < N; ++i) {
             val = values[i];
-            if (val < minv || val > maxv) { a.push(-1); }
-            else if (val == maxv) { a.push(unique - 1); }
-            else { a.push(~~((values[i] - minv) / step)); }
+            if (val < minv || val > maxv) {
+                a.push(-1);
+            } else if (val == maxv) {
+                a.push(unique - 1);
+            } else {
+                a.push(~~((values[i] - minv) / step));
+            }
         }
         for (i = 0; i < unique; ++i) {
             // multiply b/c adding garners round-off error
@@ -541,17 +717,20 @@ dv.bin = function(expr, step, min, max) {
         return a;
     };
     op.step = function(x) {
-        if (x === undefined) return step;
+        if (x === undefined)
+            return step;
         step = x;
         return op;
     };
     op.min = function(x) {
-        if (x === undefined) return min;
+        if (x === undefined)
+            return min;
         min = x;
         return op;
     };
     op.max = function(x) {
-        if (x === undefined) return max;
+        if (x === undefined)
+            return max;
         max = x;
         return op;
     };
@@ -561,12 +740,20 @@ dv.bin = function(expr, step, min, max) {
 
 dv.quantile = function(expr, n) {
     function search(array, value) {
-        var low = 0, high = array.length - 1;
+        var low = 0,
+            high = array.length - 1;
+
         while (low <= high) {
-            var mid = (low + high) >> 1, midValue = array[mid];
-            if (midValue < value) { low = mid + 1; }
-            else if (midValue > value) { high = mid - 1; }
-            else { return mid; }
+            var mid = (low + high) >> 1,
+                midValue = array[mid];
+
+            if (midValue < value) {
+                low = mid + 1;
+            } else if (midValue > value) {
+                high = mid - 1;
+            } else {
+                return mid;
+            }
         }
         var i = -low - 1;
         return (i < 0) ? (-i - 1) : i;
@@ -575,18 +762,27 @@ dv.quantile = function(expr, n) {
     var op = {};
     op.array = function(values) {
         // get sorted data values
-        var i, d = values.sorted;
+        var i,
+            d = values.sorted;
+
         if (!d) {
             var cmp;
             if (values.type && values.type === "numeric") {
-                cmp = function(a,b) { return a - b; }
+                cmp = function(a, b) {
+                    return a - b;
+                };
             } else {
-                cmp = function(a,b) { return a < b ? -1 : a > b ? 1 : 0; }
+                cmp = function(a, b) {
+                    return a < b ? -1 : a > b ? 1 : 0;
+                };
             }
             values.sorted = (d = values.slice().sort(cmp));
         }
         // compute quantile boundaries
-        var q = [d[0]], a = [], lut = (a.lut = []);
+        var q = [d[0]],
+            a = [],
+            lut = (a.lut = []);
+
         for (i = 1; i <= n; ++i) {
             q[i] = d[~~(i * (d.length - 1) / n)];
             lut.push(i - 1);
@@ -598,7 +794,8 @@ dv.quantile = function(expr, n) {
         return a;
     }
     op.bins = function(x) {
-        if (x === undefined) return n;
+        if (x === undefined)
+            return n;
         n = x;
         return op;
     }
@@ -606,4 +803,5 @@ dv.quantile = function(expr, n) {
     return op;
 };
 
-return dv; })();
+return dv;
+})();
